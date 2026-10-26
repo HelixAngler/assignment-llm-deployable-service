@@ -36,10 +36,27 @@ uvicorn app.main:app --reload
 
 ## Menjalankan dengan Docker
 
+Build memakai multi-stage: stage builder (`embed-builder`) membangun index
+embedding dari knowledge base **tanpa menjalankan server** — CSV knowledge base
+hanya hidup di stage itu dan tidak pernah masuk ke image akhir. Stage serving
+(`python:3.14-slim`) hanya menerima file essential: `app/`, `data/mock_tickets.csv`,
+dan index embedding hasil stage builder.
+
 ```bash
+# Mode 1 — embed/ sudah berisi artifact (hasil run lokal atau build sebelumnya):
 docker build -t it-helpdesk-assistant .
+
+# Mode 2 — embed/ masih kosong (mis. fresh clone): sediakan GEMINI_API_KEY
+# sebagai BuildKit secret agar stage builder membuat index dari CSV:
+set -a; source .env; set +a
+docker build --secret id=GEMINI_API_KEY,env=GEMINI_API_KEY -t it-helpdesk-assistant .
+
 docker run -p 8000:8000 --env-file .env it-helpdesk-assistant
 ```
+
+Tanpa artifact maupun secret, build gagal cepat dengan pesan yang menjelaskan
+kedua opsi di atas. API key tidak pernah ter-bake ke dalam image
+(hanya masuk lewat `--env-file` saat runtime).
 
 ## Menguji Endpoint
 
