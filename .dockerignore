@@ -1,0 +1,10 @@
+# Keep the Docker build context small and never bake secrets into the image.
+.venv/
+.git/
+__pycache__/
+*.py[cod]
+.env
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.md
