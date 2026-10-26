@@ -46,10 +46,9 @@ dan index embedding hasil stage builder.
 # Mode 1 — embed/ sudah berisi artifact (hasil run lokal atau build sebelumnya):
 docker build -t it-helpdesk-assistant .
 
-# Mode 2 — embed/ masih kosong (mis. fresh clone): sediakan GEMINI_API_KEY
-# sebagai BuildKit secret agar stage builder membuat index dari CSV:
-set -a; source .env; set +a
-docker build --secret id=GEMINI_API_KEY,env=GEMINI_API_KEY -t it-helpdesk-assistant .
+# Mode 2 — embed/ masih kosong (mis. fresh clone): stage builder membaca
+# GEMINI_API_KEY langsung dari file .env (tanpa mengekspor apa pun ke shell):
+docker build --secret id=GEMINI_API_KEY,src=.env -t it-helpdesk-assistant .
 
 docker run -p 8000:8000 --env-file .env it-helpdesk-assistant
 ```
