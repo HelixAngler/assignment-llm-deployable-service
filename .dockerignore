@@ -1,7 +1,7 @@
 # Keep the Docker build context small and never bake secrets into the image.
 .venv/
 .git/
-__pycache__/
+**/__pycache__/
 *.py[cod]
 .env
 .pytest_cache/

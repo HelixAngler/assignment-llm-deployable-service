@@ -7,6 +7,7 @@ Alur endpoint utama:
   3. Router memanggil RAG (rag.py) atau tool (tools.py) sesuai intent
   4. Mengembalikan response terstruktur ke client
 """
+import logging
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -15,6 +16,10 @@ import asyncio
 
 from app.router import handle_query
 import app.rag as rag
+
+load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="IT Helpdesk Assistant API")
 
@@ -47,6 +52,19 @@ async def ask(request: AskRequest):
     """
     # result = await handle_query(request.query)
     # return AskResponse(**result)
+    try:
+        result = await handle_query(request.query)
+        return AskResponse(**result)
+    except Exception:
+        logger.exception("Gagal memproses permintaan: %r", request.query)
+        return AskResponse(
+            status="error",
+            intent="unknown",
+            data=(
+                "Maaf, terjadi kesalahan saat memproses permintaan Anda. "
+                "Silakan coba lagi beberapa saat lagi."
+            ),
+        )
 
 
 

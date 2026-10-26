@@ -26,7 +26,16 @@ _df = None
 
 def _init_client():
     global _client
-    _client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+    _client = genai.Client(
+        api_key=os.environ.get("GEMINI_API_KEY"),
+        http_options=genai.types.HttpOptions(
+            retry_options=genai.types.HttpRetryOptions(
+                attempts=3,
+                initial_delay=1.0,
+                max_delay=8.0,
+            ),
+        ),
+    )
 
 
 def _init_index():
@@ -111,4 +120,40 @@ async def answer_from_knowledge_base(query: str) -> str:
     # TODO: implementasikan alur lengkap: semantic_search -> build prompt
     # (Persona/Task/Context/Format, lihat Assignment 3 Section 6) -> panggil LLM.
     """
-    raise NotImplementedError("Implementasikan answer_from_knowledge_base di sini")
+    if _client is None:
+        _init_client()
+    if _index is None:
+        _init_index()
+
+    results = semantic_search(query, top_k=3)
+    context_blocks = "\n\n".join(
+        f"[{r['rank']}] {r['question']}\n{r['answer']}" for r in results
+    )
+    prompt = (
+        "Persona: Anda adalah asisten IT Helpdesk internal perusahaan yang "
+        "ramah, profesional, dan membantu karyawan.\n"
+        "Tugas: Jawab pertanyaan karyawan HANYA berdasarkan konteks knowledge "
+        "base di bawah ini. Jika konteks tidak memuat jawabannya, katakan "
+        "jujur bahwa Anda tidak menemukan informasinya dan sarankan menghubungi "
+        "tim IT Helpdesk. Jangan mengarang informasi.\n"
+        f"Konteks:\n{context_blocks}\n\n"
+        "Format: Jawab dalam bahasa Indonesia yang ringkas, jelas, dan "
+        "mudah dipahami. Gunakan poin-poin bila informasinya banyak.\n"
+        f"Pertanyaan: {query}"
+    )
+    response = _client.models.generate_content(
+        model=os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"),
+        contents=prompt,
+        config=genai.types.GenerateContentConfig(
+            temperature=0.2,
+            max_output_tokens=1024,
+            thinking_config=genai.types.ThinkingConfig(thinking_budget=0),
+        ),
+    )
+    answer = response.text
+    if not answer:
+        return (
+            "Maaf, saya tidak dapat menghasilkan jawaban saat ini. "
+            "Silakan coba lagi beberapa saat lagi."
+        )
+    return answer
