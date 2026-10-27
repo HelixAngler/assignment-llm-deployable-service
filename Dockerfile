@@ -12,6 +12,13 @@
 #           -t it-helpdesk-assistant .
 #   Stage 2 (serving) — python:3.14-slim bersih; hanya file essential yang
 #     di-copy: app/, data/mock_tickets.csv, dan index embedding hasil stage 1.
+#
+# Konfigurasi model Gemini (default ada di app/rag.py):
+#   - Build time (model embedding untuk tahap builder):
+#       docker build --build-arg GEMINI_EMBEDDING_MODEL=<nama-model> ...
+#   - Runtime (model generasi & embedding):
+#       docker run --env-file .env ...   (isi GEMINI_MODEL / GEMINI_EMBEDDING_MODEL
+#       di .env, atau gunakan -e GEMINI_MODEL=...)
 
 # ── Stage 1: builder embedding ──────────────────────────────────────────────
 FROM python:3.14-slim AS embed-builder
@@ -24,6 +31,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY data/it_helpdesk_knowledge_base.csv ./data/it_helpdesk_knowledge_base.csv
 COPY embed/ ./embed/
+
+# Model embedding untuk tahap build (opsional; kosong = default di app/rag.py).
+# Nilai ARG tersedia sebagai environment variable pada RUN di stage ini.
+ARG GEMINI_EMBEDDING_MODEL
 
 # Secret diberikan sebagai file .env (format KEY=value maupun raw key didukung);
 # nilai tidak pernah ter-bake ke layer/history image.

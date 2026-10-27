@@ -18,11 +18,33 @@ from google import genai  # sesuaikan dengan library Gemini API yang digunakan
 DEFAULT_KNOWLEDGE_BASE_PATH = "data/it_helpdesk_knowledge_base.csv"
 DEFAULT_PREPROCESS_KNOWLEDGE_BASE_PATH = "embed/preprocess_knowledge.parquet"
 DEFAULT_INDEX_BASE_PATH = "embed/embedding.bin"
+DEFAULT_GENERATION_MODEL = "gemini-3.6-flash"
+DEFAULT_EMBEDDING_MODEL = "gemini-embedding-001"
 
 _client = None
 _index = None
 _documents = None
 _df = None
+
+
+def get_generation_model() -> str:
+    """
+    Model Gemini untuk generasi jawaban/intent.
+
+    Override melalui environment variable GEMINI_MODEL
+    (nilai kosong dianggap tidak diset, sehingga pakai default).
+    """
+    return os.environ.get("GEMINI_MODEL") or DEFAULT_GENERATION_MODEL
+
+
+def get_embedding_model() -> str:
+    """
+    Model Gemini untuk membuat embedding.
+
+    Override melalui environment variable GEMINI_EMBEDDING_MODEL
+    (nilai kosong dianggap tidak diset, sehingga pakai default).
+    """
+    return os.environ.get("GEMINI_EMBEDDING_MODEL") or DEFAULT_EMBEDDING_MODEL
 
 
 def _init_client():
@@ -93,7 +115,7 @@ def _get_embedding(text: str):
     if _client is None:
         _init_client()
     result = _client.models.embed_content(
-        model="gemini-embedding-001",  # sesuaikan versi model embedding
+        model=get_embedding_model(),
         contents=text,
     )
     return result.embeddings[0].values
@@ -145,7 +167,7 @@ async def answer_from_knowledge_base(query: str) -> str:
         f"Pertanyaan: {query}"
     )
     response = _client.models.generate_content(
-        model=os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"),
+        model=get_generation_model(),
         contents=prompt,
         config=genai.types.GenerateContentConfig(
             temperature=0.2,

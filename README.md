@@ -50,12 +50,30 @@ docker build -t it-helpdesk-assistant .
 # GEMINI_API_KEY langsung dari file .env (tanpa mengekspor apa pun ke shell):
 docker build --secret id=GEMINI_API_KEY,src=.env -t it-helpdesk-assistant .
 
+# Opsional: model embedding untuk tahap build (default: gemini-embedding-001)
+docker build --secret id=GEMINI_API_KEY,src=.env \
+  --build-arg GEMINI_EMBEDDING_MODEL=gemini-embedding-001 \
+  -t it-helpdesk-assistant .
+
 docker run -p 8000:8000 --env-file .env it-helpdesk-assistant
 ```
 
 Tanpa artifact maupun secret, build gagal cepat dengan pesan yang menjelaskan
 kedua opsi di atas. API key tidak pernah ter-bake ke dalam image
 (hanya masuk lewat `--env-file` saat runtime).
+
+### Konfigurasi Model
+
+Model Gemini dapat di-override lewat environment variable (default ada di
+`app/rag.py`):
+
+| Variable | Default | Kapan dipakai |
+|---|---|---|
+| `GEMINI_MODEL` | `gemini-3.6-flash` | Runtime — generasi jawaban & intent detection |
+| `GEMINI_EMBEDDING_MODEL` | `gemini-embedding-001` | Runtime (query embedding) & build time (`--build-arg`) |
+
+Isi di `.env` untuk `docker run --env-file .env` / `uvicorn`, atau gunakan
+`-e`/`--build-arg` sesuai kebutuhan.
 
 ## Menguji Endpoint
 

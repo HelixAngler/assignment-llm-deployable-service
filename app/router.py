@@ -13,7 +13,7 @@ import re
 
 from google import genai
 
-from app.rag import answer_from_knowledge_base
+from app.rag import answer_from_knowledge_base, get_generation_model
 from app.tools import get_ticket_status
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ async def detect_intent(query: str) -> str:
             f"Pertanyaan: {query}"
         )
         response = _get_client().models.generate_content(
-            model=os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"),
+            model=get_generation_model(),
             contents=prompt,
         )
         answer = (response.text or "").strip().lower()
