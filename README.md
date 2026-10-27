@@ -50,8 +50,9 @@ docker build -t it-helpdesk-assistant .
 # GEMINI_API_KEY langsung dari file .env (tanpa mengekspor apa pun ke shell):
 docker build --secret id=GEMINI_API_KEY,src=.env -t it-helpdesk-assistant .
 
-# Opsional: model embedding untuk tahap build (default: gemini-embedding-001)
-docker build --secret id=GEMINI_API_KEY,src=.env \
+# Build dengan seluruh parameter build terisi (key + model embedding):
+docker build \
+  --secret id=GEMINI_API_KEY,src=.env \
   --build-arg GEMINI_EMBEDDING_MODEL=gemini-embedding-001 \
   -t it-helpdesk-assistant .
 
