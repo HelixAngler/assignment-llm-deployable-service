@@ -1,7 +1,5 @@
-# 🔧 TODO: lengkapi Dockerfile berikut mengikuti pola yang sudah dipelajari
-# di Sesi 14.2 (FROM python -> WORKDIR -> COPY -> RUN pip -> CMD).
-#
-# Multi-stage build:
+# Multi-stage build — mengikuti pola Sesi 14.2 (FROM -> WORKDIR -> COPY ->
+# RUN pip -> CMD), dibagi menjadi dua stage:
 #   Stage 1 (embed-builder) — "mode" khusus membangun index embedding dari
 #     knowledge base, TANPA menjalankan server. CSV knowledge base hanya hidup
 #     di stage ini dan TIDAK pernah masuk ke image akhir.
@@ -53,12 +51,12 @@ FROM python:3.14-slim
 
 WORKDIR /app
 
-# TODO: copy requirements.txt terlebih dahulu, lalu install dependencies
+# Copy requirements.txt terlebih dahulu, lalu install dependencies
 # (praktik yang baik agar Docker layer caching bekerja optimal)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# TODO: copy seluruh source code aplikasi ke dalam container
+# Copy source code + data yang dibutuhkan saat runtime.
 # Hanya file essential — tanpa README, pyproject, uv.lock, .env, .git, .venv,
 # dan tanpa data/it_helpdesk_knowledge_base.csv (digantikan index embedding).
 COPY app/ ./app/
@@ -66,8 +64,8 @@ COPY data/mock_tickets.csv ./data/mock_tickets.csv
 COPY --from=embed-builder /build/embed/embedding.bin ./embed/embedding.bin
 COPY --from=embed-builder /build/embed/preprocess_knowledge.parquet ./embed/preprocess_knowledge.parquet
 
-# TODO: tentukan port yang akan digunakan (misal 8000) dan expose port tersebut
+# Port yang digunakan: 8000 (sesuai README)
 EXPOSE 8000
 
-# TODO: tentukan CMD untuk menjalankan aplikasi FastAPI menggunakan uvicorn
+# Menjalankan aplikasi FastAPI menggunakan uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

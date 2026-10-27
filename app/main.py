@@ -7,15 +7,16 @@ Alur endpoint utama:
   3. Router memanggil RAG (rag.py) atau tool (tools.py) sesuai intent
   4. Mengembalikan response terstruktur ke client
 """
+
 import logging
+
 import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
-from dotenv import load_dotenv
-import asyncio
 
+from app import rag
 from app.router import handle_query
-import app.rag as rag
 
 load_dotenv()
 
@@ -47,11 +48,9 @@ async def ask(request: AskRequest):
     pertanyaan informasi/kebijakan ATAU permintaan cek status tiket),
     lalu meneruskannya ke router untuk diproses.
 
-    # TODO: tambahkan error handling untuk kondisi LLM gagal merespons
-    # atau intent tidak dapat dikenali (lihat panduan error handling di Sesi 13.4)
+    Menangani kondisi LLM gagal merespons atau intent tidak dikenali
+    dengan mengembalikan response error terstruktur (bukan crash).
     """
-    # result = await handle_query(request.query)
-    # return AskResponse(**result)
     try:
         result = await handle_query(request.query)
         return AskResponse(**result)
@@ -67,8 +66,6 @@ async def ask(request: AskRequest):
         )
 
 
-
-if __name__ == '__main__':
-    load_dotenv()
+if __name__ == "__main__":
     rag.init_rag()
     uvicorn.run(app, host="0.0.0.0", port=8080)

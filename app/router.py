@@ -7,6 +7,7 @@ Pola ini mengikuti workflow router yang sudah dipelajari di Sesi 12.4:
                                   -> jika butuh aksi -> tool call
 """
 
+import logging
 import os
 import re
 
@@ -15,7 +16,8 @@ from google import genai
 from app.rag import answer_from_knowledge_base
 from app.tools import get_ticket_status
 
-# 🔧 TODO: import LLM client di sini (Gemini AI API) untuk melakukan intent detection
+logger = logging.getLogger(__name__)
+
 _client = None
 
 _HTTP_OPTIONS = genai.types.HttpOptions(
@@ -64,17 +66,11 @@ async def detect_intent(query: str) -> str:
       - "faq"           -> pertanyaan informasi/kebijakan, arahkan ke RAG
       - "ticket_status"  -> permintaan cek status tiket, arahkan ke tool call
 
-    # TODO: implementasikan intent detection menggunakan LLM (structured prompt,
-    # lihat Sesi 10.1) ATAU pendekatan sederhana berbasis keyword sebagai baseline
-    # sebelum beralih ke pendekatan berbasis LLM.
-    #
-    # Contoh prompt yang bisa dipakai sebagai starting point:
-    #
-    #   "Klasifikasikan pertanyaan berikut ke dalam salah satu kategori:
-    #    'faq' (pertanyaan informasi/kebijakan umum) atau
-    #    'ticket_status' (permintaan mengecek status tiket tertentu).
-    #    Jawab hanya dengan satu kata.
-    #    Pertanyaan: {query}"
+    Strategi hemat token: query yang secara eksplisit merujuk tiket
+    (ID TICKET-XXXX atau kata kunci tiket+aksi) diklasifikasi berbasis
+    keyword tanpa LLM. Hanya query ambigu yang diklasifikasi LLM
+    (structured prompt, satu kata jawaban); bila LLM gagal atau jawaban
+    tidak valid, fallback ke "faq".
     """
     keyword_result = _keyword_intent(query)
     if keyword_result is not None:
@@ -97,7 +93,11 @@ async def detect_intent(query: str) -> str:
         if answer in ("faq", "ticket_status"):
             return answer
     except Exception:
-        pass
+        logger.warning(
+            "Intent detection via LLM gagal untuk query %r; fallback ke keyword/default",
+            query,
+            exc_info=True,
+        )
 
     # Fallback terakhir: perlakukan sebagai pertanyaan informasi/kebijakan.
     return "faq"
@@ -111,8 +111,6 @@ async def handle_query(query: str) -> dict:
     intent = await detect_intent(query)
 
     if intent == "ticket_status":
-        # 🔧 TODO: ekstrak ticket_id dari query (misal menggunakan regex
-        # atau meminta LLM mengekstrak entitas ticket_id dari kalimat user)
         ticket_id = extract_ticket_id(query)
         data = get_ticket_status(ticket_id)
         return {"status": "success", "intent": "ticket_status", "data": data}
@@ -122,13 +120,19 @@ async def handle_query(query: str) -> dict:
         return {"status": "success", "intent": "faq", "data": data}
 
     else:
-        return {"status": "error", "intent": "unknown", "data": "Maaf, saya tidak memahami permintaan Anda."}
+        return {
+            "status": "error",
+            "intent": "unknown",
+            "data": "Maaf, saya tidak memahami permintaan Anda.",
+        }
 
 
 def extract_ticket_id(query: str) -> str:
     """
-    # TODO: implementasikan ekstraksi ticket_id dari teks query.
-    # Format ticket_id pada mock_tickets.csv adalah 'TICKET-XXXX'.
+    Mengekstrak ticket_id dari teks query.
+
+    Format ticket_id pada mock_tickets.csv adalah 'TICKET-XXXX'.
+    Mengembalikan string kosong bila tidak ditemukan.
     """
     match = _TICKET_ID_RE.search(query)
     return match.group(0).upper() if match else ""

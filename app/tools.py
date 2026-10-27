@@ -15,15 +15,9 @@ def get_ticket_status(ticket_id: str) -> str:
     """
     Mencari status tiket berdasarkan ticket_id pada data mock_tickets.csv.
 
-    # TODO: implementasikan pencarian data tiket berdasarkan ticket_id.
-    # Jika ticket_id tidak ditemukan, kembalikan pesan yang informatif
-    # (bukan error yang membuat aplikasi crash).
-    #
-    # Contoh langkah:
-    #   1. Muat mock_tickets.csv menggunakan pandas
-    #   2. Cari baris dengan ticket_id yang cocok
-    #   3. Jika ditemukan, susun string jawaban (subject, status, last_update)
-    #   4. Jika tidak ditemukan, kembalikan pesan bahwa tiket tidak ditemukan
+    Mengembalikan string jawaban informatif (subject, kategori, status,
+    last_update). Jika ticket_id kosong atau tidak ditemukan, mengembalikan
+    pesan informatif — bukan error yang membuat aplikasi crash.
     """
     df = pd.read_csv(MOCK_TICKETS_PATH)
 
